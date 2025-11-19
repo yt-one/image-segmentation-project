@@ -1,5 +1,3 @@
-import matplotlib
-# matplotlib.use('agg')
 import os
 import sys
 
@@ -7,7 +5,6 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(BASE_DIR, '..'))
 
 import argparse
-import torch
 import torch.optim as optim
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -16,6 +13,7 @@ from tools.model_trainer import ModelTrainer
 from tools.common_tools import *
 from config.camvid_config import cfg
 from models.unet import UNet, UNetResnet
+
 from tools.evaluation_segmentation import calc_semantic_segmentation_iou
 from datetime import datetime
 
@@ -60,8 +58,11 @@ if __name__ == '__main__':
     valid_loader = DataLoader(valid_data, batch_size=cfg.valid_bs, num_workers=cfg.workers)
 
     # ------------------------------------ step 2/4 : 定义网络------------------------------------
+    # model = DeepLabV3Plus(num_classes=train_data.cls_num, path_model=path_model_101)
     model = UNet(num_classes=train_data.cls_num)
-    # model = UNetResnet(num_classes=train_data.cls_num, backbone='resnet50', path_model=path_model_50)
+    # model = UNetResnet(num_classes=train_data.cls_num, backbone='resnet50', path_model=path_model_50s)
+    # model = SegNet(num_classes=train_data.cls_num, path_model=path_model_vgg)
+    # model = SegResNet(num_classes=train_data.cls_num, path_model=path_model_50)
     model.to(cfg.device)
 
     # ------------------------------------ step 3/4 : 定义损失函数和优化器 ------------------------------------
@@ -78,21 +79,22 @@ if __name__ == '__main__':
     acc_rec = {"train": [], "valid": []}
     miou_rec = {"train": [], "valid": []}
     best_miou, best_epoch = 0, 0
-
+    grad_lst_epoch = []
     for epoch in range(cfg.max_epoch):
 
-        loss_train, acc_train, mat_train, miou_train = ModelTrainer.train(
+        loss_train, acc_train, mat_train, miou_train, grad_lst = ModelTrainer.train(
             train_loader, model, loss_f, cfg, optimizer, epoch, logger)
         loss_valid, acc_valid, mat_valid, miou_valid = ModelTrainer.valid(
             valid_loader, model, loss_f, cfg)
 
+        grad_lst_epoch.extend(grad_lst)
         scheduler.step()
 
         logger.info("Epoch[{:0>3}/{:0>3}] Train Acc: {:.2%} Valid Acc:{:.2%}\n"
                     "Train loss:{:.4f} Train miou:{:.4f}\n"
                     "Valid loss:{:.4f} Valid miou:{:.4f}\n"
-                    "LR:{}".format(epoch, cfg.max_epoch, acc_train, acc_valid, loss_train, miou_train,
-                                   loss_valid, miou_valid, optimizer.param_groups[0]["lr"]))
+                    "LR:{}". format(epoch, cfg.max_epoch, acc_train, acc_valid, loss_train, miou_train,
+                                    loss_valid, miou_valid, optimizer.param_groups[0]["lr"]))
 
         # 记录训练信息
         loss_rec["train"].append(loss_train), loss_rec["valid"].append(loss_valid)
@@ -109,20 +111,30 @@ if __name__ == '__main__':
         plot_line(plt_x, acc_rec["train"], plt_x, acc_rec["valid"], mode="acc", out_dir=log_dir)
         plot_line(plt_x, miou_rec["train"], plt_x, miou_rec["valid"], mode="miou", out_dir=log_dir)
         # 保存模型
-        if best_miou < miou_valid or epoch == cfg.max_epoch - 1:
+        if best_miou < miou_valid or epoch == cfg.max_epoch-1:
+
             best_epoch = epoch if best_miou < miou_valid else best_epoch
             best_miou = miou_valid if best_miou < miou_valid else best_miou
             checkpoint = {"model_state_dict": model.state_dict(),
                           "optimizer_state_dict": optimizer.state_dict(),
                           "epoch": epoch,
                           "best_miou": best_miou}
-            pkl_name = "checkpoint_{}.pkl".format(epoch) if epoch == cfg.max_epoch - 1 else "checkpoint_best.pkl"
+            pkl_name = "checkpoint_{}.pkl".format(epoch) if epoch == cfg.max_epoch-1 else "checkpoint_best.pkl"
             path_checkpoint = os.path.join(log_dir, pkl_name)
             torch.save(checkpoint, path_checkpoint)
             # 观察各类别的iou：
             iou_array = calc_semantic_segmentation_iou(mat_valid)
             info = ["{}_iou:{:.2f}".format(n, iou) for n, iou in zip(train_data.names, iou_array)]
             logger.info("Best mIoU in {}. {}".format(epoch, "\n".join(info)))
+
+        if cfg.hist_grad:
+            path_grad_png = os.path.join(log_dir, "grad_hist.png")
+            logger.info("max grad in {}, is {}".format(grad_lst_epoch.index(max(grad_lst_epoch)), max(grad_lst_epoch)))
+            import matplotlib.pyplot as plt
+
+            plt.hist(grad_lst_epoch)
+            plt.savefig(path_grad_png)
+            logger.info(grad_lst_epoch)
 
     logger.info("{} done, best_miou: {:.4f} in :{}".format(
         datetime.strftime(datetime.now(), '%m-%d_%H-%M'), best_miou, best_epoch))

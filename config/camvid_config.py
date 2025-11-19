@@ -8,10 +8,15 @@ cfg.max_epoch = 150  # 150
 
 cfg.crop_size = (360, 480)
 
+# 梯度裁剪
+cfg.hist_grad = True
+cfg.is_clip = False
+cfg.clip_value = 0.2
+
 # batch size
-cfg.train_bs = 2  # 8
-cfg.valid_bs = 1  # 4
-cfg.workers = 1  # 16
+cfg.train_bs = 8
+cfg.valid_bs = 4
+cfg.workers = 16
 
 # 学习率
 cfg.lr_init = 0.1  # pretraied_model::0.1

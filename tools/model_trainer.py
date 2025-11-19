@@ -1,8 +1,11 @@
+import torch
 import numpy as np
 from tools.evaluation_segmentation import eval_semantic_segmentation
+from torch.nn.utils import clip_grad_value_
 
 
 class ModelTrainer(object):
+
     @staticmethod
     def train(data_loader, model, loss_f, cfg, optimizer, epoch_idx, logger):
         model.train()
@@ -12,7 +15,7 @@ class ModelTrainer(object):
         loss_sigma = []
         train_acc = []
         train_miou = []
-
+        grad_lst_iter = []
         for i, data in enumerate(data_loader):
 
             inputs, labels = data
@@ -23,6 +26,16 @@ class ModelTrainer(object):
             optimizer.zero_grad()
             loss = loss_f(outputs.cpu(), labels.cpu())
             loss.backward()
+
+            if cfg.is_clip:
+                clip_grad_value_(model.parameters(), cfg.clip_value)
+
+            if cfg.hist_grad:
+                grad_lst_tmp = []
+                for p in model.parameters():
+                    grad_lst_tmp.append(torch.max(p.grad.abs()).cpu().numpy())
+                grad_lst_iter.append(max(grad_lst_tmp).flatten()[0])
+
             optimizer.step()
 
             # 评估
@@ -45,7 +58,7 @@ class ModelTrainer(object):
         loss_mean = np.mean(loss_sigma)
         acc_mean = np.mean(train_acc)
         miou_mean = np.mean(train_miou)
-        return loss_mean, acc_mean, conf_mat, miou_mean
+        return loss_mean, acc_mean, conf_mat, miou_mean, grad_lst_iter
 
     @staticmethod
     def valid(data_loader, model, loss_f, cfg):
@@ -84,3 +97,5 @@ class ModelTrainer(object):
         miou_mean = np.mean(valid_miou)
 
         return loss_mean, acc_mean, conf_mat, miou_mean
+
+
