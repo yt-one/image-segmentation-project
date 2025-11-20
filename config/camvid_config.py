@@ -16,7 +16,7 @@ cfg.clip_value = 0.2
 # batch size
 cfg.train_bs = 8
 cfg.valid_bs = 4
-cfg.workers = 16
+cfg.workers = 4
 
 # 学习率
 cfg.lr_init = 0.1  # pretraied_model::0.1

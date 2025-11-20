@@ -13,6 +13,7 @@ from tools.model_trainer import ModelTrainer
 from tools.common_tools import *
 from config.camvid_config import cfg
 from models.unet import UNet, UNetResnet
+from models.segnet import SegResNet
 
 from tools.evaluation_segmentation import calc_semantic_segmentation_iou
 from datetime import datetime
@@ -34,8 +35,10 @@ if __name__ == '__main__':
     # step0: setting path
     # path_model_101 = os.path.join(BASE_DIR, "..", "..", "data", "pretrained_model",
     #                               "resnet101s-03a0f310.pth")  # deeplab
-    # path_model_50 = os.path.join(BASE_DIR, "..", "..", "data", "pretrained_model", "resnet50s-a75c83cf.pth")  # unet
+    # path_model_50s = os.path.join(BASE_DIR, "..", "..", "data", "pretrained_model", "resnet50s-a75c83cf.pth")  # unet
+    path_model_50 = os.path.join(BASE_DIR, "..", "..", "data", "pretrained_model", "resnet50-19c8e357.pth")  # segnet
     # path_model_vgg = os.path.join(BASE_DIR, "..", "..", "data", "pretrained_model", "vgg16_bn-6c64b313.pth")
+
     res_dir = os.path.join(BASE_DIR, "..", "..", "results")
     logger, log_dir = make_logger(res_dir)
 
@@ -59,10 +62,10 @@ if __name__ == '__main__':
 
     # ------------------------------------ step 2/4 : 定义网络------------------------------------
     # model = DeepLabV3Plus(num_classes=train_data.cls_num, path_model=path_model_101)
-    model = UNet(num_classes=train_data.cls_num)
+    # model = UNet(num_classes=train_data.cls_num)
     # model = UNetResnet(num_classes=train_data.cls_num, backbone='resnet50', path_model=path_model_50s)
     # model = SegNet(num_classes=train_data.cls_num, path_model=path_model_vgg)
-    # model = SegResNet(num_classes=train_data.cls_num, path_model=path_model_50)
+    model = SegResNet(num_classes=train_data.cls_num, path_model=path_model_50)
     model.to(cfg.device)
 
     # ------------------------------------ step 3/4 : 定义损失函数和优化器 ------------------------------------

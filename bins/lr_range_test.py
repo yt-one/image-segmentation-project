@@ -5,6 +5,8 @@ LR 区间测试
 import os
 import sys
 
+from models.segnet import SegNet
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(BASE_DIR, '..'))
 
@@ -14,7 +16,6 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from datasets.camvid_dataset import CamvidDataset
 from tools.common_tools import setup_seed, check_data_dir
-from models.unet import UNet
 from config.camvid_config import cfg
 from torch_lr_finder import LRFinder
 
@@ -33,10 +34,10 @@ cfg.max_epoch = args.max_epoch if args.max_epoch else cfg.max_epoch
 
 if __name__ == '__main__':
     # 设置路径
-    # path_model_50 = os.path.join(BASE_DIR, "..", "..", "data", "pretrained_model", "resnet50-19c8e357.pth")  # segnet
+    path_model_50 = os.path.join(BASE_DIR, "..", "..", "data", "pretrained_model", "resnet50-19c8e357.pth")  # segnet
     # path_model_101 = os.path.join(BASE_DIR, "..", "..", "data", "pretrained_model", "resnet101s-03a0f310.pth")  # deeplab
     # path_model_50s = os.path.join(BASE_DIR, "..", "..", "data", "pretrained_model", "resnet50s-a75c83cf.pth")  # unet
-    # path_model_vgg = os.path.join(BASE_DIR, "..", "..", "data", "pretrained_model", "vgg16_bn-6c64b313.pth")
+    path_model_vgg = os.path.join(BASE_DIR, "..", "..", "data", "pretrained_model", "vgg16_bn-6c64b313.pth")
     # ------------------------------------ step 1/5 : 加载数据------------------------------------
     # 构建Dataset实例
     root_dir = args.data_root_dir
@@ -51,10 +52,10 @@ if __name__ == '__main__':
     train_loader = DataLoader(train_set, batch_size=cfg.train_bs, shuffle=True, num_workers=1)
 
     # ------------------------------------ step 2/5 : 定义网络------------------------------------
-    # model = SegNet(num_classes=train_set.cls_num, path_model=path_model_vgg)
+    model = SegNet(num_classes=train_set.cls_num, path_model=path_model_vgg)
     # model = SegResNet(num_classes=train_set.cls_num, path_model=None)
-    model = UNet(num_classes=train_set.cls_num)
-    # model = DeepLabV3Plus(num_classes=train_set.cls_num, path_model=path_model)
+    # model = Unet(num_classes=train_set.cls_num)
+    # model = DeepLabV3Plus(num_classes=train_set.cls_num, path_model=path_model_101)
     model.to(cfg.device)
 
     # ------------------------------------ step 3/5 : 定义损失函数和优化器 ------------------------------------
