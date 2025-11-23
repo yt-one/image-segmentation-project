@@ -6,7 +6,7 @@ import torch.nn.functional as F
 class CrossEntropyLossFloat(nn.Module):
     """
     浮点类型的CE实现，适用于标签是连续变量
-    （补充说明：PyTorch提供的CE Loss，只适用于标签为one-hot向量的形式）
+    （补充说明：PyTorch早期版本提供的CE Loss，只适用于标签为one-hot向量的形式）
     """
     def __init__(self):
         super(CrossEntropyLossFloat, self).__init__()
@@ -19,10 +19,13 @@ class CrossEntropyLossFloat(nn.Module):
 
 
 if __name__ == "__main__":
+
+    # 注意这个示例的形状会是 (1,2,3,2)
     fake_out = torch.tensor([[[0.7311, 0.7311], [0.7311, 0.7311], [0.7311, 0.7311]],
                                [[0.2689, 0.2689], [0.2689, 0.2689], [0.2689, 0.2689]]], dtype=torch.float32
                               ).unsqueeze_(0)    # unsqueeze_(0) 添加批量维度
 
+    # 注意这个标签被 one-hot了，实际项目中不用处理成这种形式
     fake_label = torch.tensor([[[1, 1], [1, 1], [1, 1]],
                                [[0, 0], [0, 0], [0, 0]]], dtype=torch.float32
                               ).unsqueeze_(0)  # unsqueeze_(0) 添加批量维度
@@ -36,6 +39,12 @@ if __name__ == "__main__":
     loss_ce_f = nn.CrossEntropyLoss()
     loss_ce = loss_ce_f(fake_out, fake_label)
     print(loss_ce)
+
+    fake_label = torch.tensor([0], dtype=torch.float32)
+
+    # 思考这个数 -0.462035怎么来的， 以及这三个print为什么结果一样
+    fake_out = torch.tensor( -0.462035, dtype=torch.float32).unsqueeze_(0)
+    print(nn.BCEWithLogitsLoss()(fake_out, fake_label))
 
 
 

@@ -27,7 +27,7 @@ cfg.hist_grad = False
 
 cfg.log_interval = 10
 
-cfg.bce_pos_weight = torch.tensor(0.75)  #  [36638126., 48661074.]) pos_weight=负样本数量 / 正样本数量
+cfg.bce_pos_weight = torch.tensor(0.75)  #  pos_weight=负样本数量 / 正样本数量
 
 cfg.in_size = 512   # 输入尺寸最短边
 
