@@ -22,7 +22,7 @@ parser = argparse.ArgumentParser(description='Training')
 parser.add_argument('--lr', default=None, help='learning rate', type=float)
 parser.add_argument('--max_epoch', default=None, type=int)
 parser.add_argument('--train_bs', default=0, type=int)
-parser.add_argument('--data_root_dir', default=r"...",
+parser.add_argument('--data_root_dir', default=r"D:\Learn\Datasets\Portrait-dataset-2000\dataset",
                     help="path to your dataset")
 parser.add_argument('--sup_dir', default=r"...",
                     help="path to your dataset")

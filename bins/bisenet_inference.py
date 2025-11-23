@@ -8,14 +8,14 @@ import cv2
 import time
 import numpy as np
 from models.build_BiSeNet import BiSeNet
-
+import albumentations as A
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 parser = argparse.ArgumentParser(description='Training')
-parser.add_argument('--path_checkpoint', default=r"...",  # todo: 模型保存路径
+parser.add_argument('--path_checkpoint', default=r"D:\Learn\Computer Science\deepLearning\visionPytorch\results\11-23_16-04\checkpoint_49.pkl",  # todo: 模型保存路径
                     help="path to your dataset")
-parser.add_argument('--path_img', default=r"...",  # todo： 预测的图片路径
+parser.add_argument('--path_img', default=r"D:\Learn\Datasets\Portrait-dataset-2000\dataset\testing\00016.png",  # todo： 预测的图片路径
                     help="path to your dataset")
 parser.add_argument('--data_root_dir', default=r"...",  # todo：数据根目录
                     help="path to your dataset")
@@ -28,7 +28,22 @@ if __name__ == '__main__':
     norm_mean = (0.5, 0.5, 0.5)  # 比imagenet的mean效果好
     norm_std = (0.5, 0.5, 0.5)
     # step1: 数据预处理
-    # todo: 数据预处理待完成
+
+    img_bgr = cv2.imread(path_img)
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+
+    img_transform = A.Compose([
+        A.Resize(width=in_size, height=in_size),
+        A.Normalize(norm_mean, norm_std),
+    ])
+
+    transformed = img_transform(image=img_rgb)
+    img_rgb = transformed['image']
+
+    img_rgb = img_rgb.transpose((2, 0, 1))  # hwc --> chw
+    img_tensor = torch.from_numpy(img_rgb).float().unsqueeze(0)
+    img_tensor = img_tensor.to(device)
+
 
     # step2: 模型加载
     model = BiSeNet(num_classes=1, context_path="resnet101")

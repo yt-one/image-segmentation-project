@@ -62,14 +62,14 @@ class PortraitDataset2000(Dataset):
 
 if __name__ == "__main__":
 
-    por_dir = r"..."  # todo： 适配自己的路径
+    por_dir = r"D:\Learn\Datasets\Portrait-dataset-2000\dataset\testing"  # todo： 适配自己的路径
 
-    por_set = PortraitDataset2000(por_dir)
+    from config.portrait_config import cfg
+    por_set = PortraitDataset2000(por_dir, transform=cfg.tf_train)
     train_loader = DataLoader(por_set, batch_size=1, shuffle=True, num_workers=0)
     print(len(train_loader))
     for i, sample in enumerate(train_loader):
         img, label = sample
-
         print(img.shape, label.shape)
         print(img)
         print(label)
