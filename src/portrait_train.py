@@ -1,7 +1,9 @@
 import os
 import sys
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(BASE_DIR, '..'))
+
 import argparse
 import torch
 import numpy as np
@@ -15,6 +17,7 @@ from config.portrait_config import cfg
 from models.build_BiSeNet import BiSeNet
 from tools.evaluation_segmentation import calc_semantic_segmentation_iou
 from datetime import datetime
+from tools.my_lr_schedule import CosineWarmupLr
 
 setup_seed(12345)  # 先固定随机种子
 
@@ -62,7 +65,14 @@ if __name__ == '__main__':
     loss_f = nn.BCEWithLogitsLoss(pos_weight=cfg.bce_pos_weight)  # 类似CE Loss, 会自带sigmoid把数据转为0-1区间
     optimizer = optim.SGD(model.parameters(), lr=cfg.lr_init, momentum=cfg.momentum, weight_decay=cfg.weight_decay)
 
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, gamma=cfg.factor, milestones=cfg.milestones)
+    if cfg.is_warmup:
+        # 注意，如果有这段warmup代码，一定要到trainer中修改 scheduler.step()
+        iter_per_epoch = len(train_loader)
+        scheduler = CosineWarmupLr(optimizer, batches=iter_per_epoch, max_epochs=cfg.max_epoch,
+                                   base_lr=cfg.lr_init, final_lr=cfg.lr_final,
+                                   warmup_epochs=cfg.warmup_epochs, warmup_init_lr=cfg.lr_warmup_init)
+    else:
+        scheduler = optim.lr_scheduler.MultiStepLR(optimizer, gamma=cfg.factor, milestones=cfg.milestones)
 
     # ------------------------------------ step 4/5 : 训练 --------------------------------------------------
     # 记录训练配置信息

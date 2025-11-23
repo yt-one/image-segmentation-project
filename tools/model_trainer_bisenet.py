@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from tools.evaluation_segmentation import eval_semantic_segmentation
 
-class ModelTrainer(object):
+class ModelTrainer:
 
     @staticmethod
     def train(data_loader, model, loss_f, optimizer, scheduler, epoch_idx, cfg, logger):
@@ -34,6 +34,10 @@ class ModelTrainer(object):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+            # warmup 每个iteration执行step
+            if cfg.is_warmup:
+                scheduler.step()
 
             # 评估 IoU
             # 预测，连续变量转binary
