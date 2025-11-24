@@ -1,6 +1,8 @@
 import os
 import sys
 
+
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(BASE_DIR, '..'))
 
@@ -18,6 +20,9 @@ from models.build_BiSeNet import BiSeNet
 from tools.evaluation_segmentation import calc_semantic_segmentation_iou
 from datetime import datetime
 from tools.my_lr_schedule import CosineWarmupLr
+from losses.bce_dice_loss import BCEDiceLoss
+from losses.dice_loss import DiceLoss
+from losses.focal_loss_binary import BinaryFocalLossWithLogits
 
 setup_seed(12345)  # 先固定随机种子
 
@@ -62,7 +67,16 @@ if __name__ == '__main__':
     model.to(cfg.device)
 
     # ------------------------------------ step 3/5 : 定义损失函数和优化器 ------------------------------------
-    loss_f = nn.BCEWithLogitsLoss(pos_weight=cfg.bce_pos_weight)  # 类似CE Loss, 会自带sigmoid把数据转为0-1区间
+    if cfg.loss_type == "BCE":
+        loss_f = nn.BCEWithLogitsLoss(pos_weight=cfg.bce_pos_weight)
+    elif cfg.loss_type == "dice":
+        loss_f = DiceLoss()
+    elif cfg.loss_type == "BCE&dice":
+        loss_f = BCEDiceLoss()
+    elif cfg.loss_type == "focal":
+        kwargs = {"alpha": cfg.focal_alpha, "gamma": cfg.focal_gamma, "reduction": 'mean'}
+        loss_f = BinaryFocalLossWithLogits(**kwargs)
+
     optimizer = optim.SGD(model.parameters(), lr=cfg.lr_init, momentum=cfg.momentum, weight_decay=cfg.weight_decay)
 
     if cfg.is_warmup:

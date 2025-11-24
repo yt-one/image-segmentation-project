@@ -4,6 +4,19 @@ import albumentations as A
 
 cfg = EasyDict()  # 访问属性的方式去使用key-value 即通过 .key获得value
 
+# cfg.loss_type = "BCE"
+# cfg.loss_type = "BCE&dice"
+cfg.loss_type = "dice"
+# cfg.loss_type = "focal"
+cfg.focal_alpha = 0.5
+cfg.focal_gamma = 2.  # 0.5， 2， 5， 10
+
+# warmup cosine decay
+cfg.is_warmup = True
+cfg.warmup_epochs = 1
+cfg.lr_final = 1e-5
+cfg.lr_warmup_init = 0.  # 是0. 没错
+
 
 cfg.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 cfg.max_epoch = 50  # 50
@@ -22,7 +35,6 @@ cfg.milestones = [25, 45]
 cfg.weight_decay = 5e-4
 cfg.momentum = 0.9
 
-cfg.is_warmup = False
 cfg.hist_grad = False
 
 cfg.log_interval = 10
