@@ -19,7 +19,6 @@ class CrossEntropyLossFloat(nn.Module):
 
 
 if __name__ == "__main__":
-
     # 注意这个示例的形状会是 (1,2,3,2)
     fake_out = torch.tensor([[[0.7311, 0.7311], [0.7311, 0.7311], [0.7311, 0.7311]],
                                [[0.2689, 0.2689], [0.2689, 0.2689], [0.2689, 0.2689]]], dtype=torch.float32
