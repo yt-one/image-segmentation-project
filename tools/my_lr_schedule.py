@@ -70,6 +70,13 @@ class CosineWarmupLr:
             iteration = self.last_iter + 1
         self.last_iter = iteration
         self.get_lr()
+
+        # param_groups？为什么一个optimizer有多个学习率？
+        # optimizer = torch.optim.SGD([
+        #     {'params': model.backbone.parameters(), 'lr': 1e-4},
+        #     {'params': model.head.parameters(),     'lr': 1e-3},
+        # ], momentum=0.9)  backbone 和 head用不一样的学习率
+        # 或者用于冻结一部分，更新一部分
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = self.learning_rate
 
