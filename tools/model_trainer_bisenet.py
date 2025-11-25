@@ -97,13 +97,13 @@ class ModelTrainer:
             # 预测，连续变量转binary
             if outputs.shape[1] == 1:
                 outputs_prob = torch.sigmoid(outputs).squeeze(1)    # 转为概率形式 0-1之间
-                outputs_b = outputs_prob > 0.5   # 转为binary形式  可以调整
+                outputs_b = outputs_prob > 0.78   # 转为binary形式  可以调整
                 outputs_b = outputs_b.long().data.cpu().numpy()
             else:
                 outputs_b = outputs.max(dim=1)[1].data.cpu().numpy()  # (4, 352, 480)
             outputs_b = [i for i in outputs_b]      # pre_label[0].shape  (600, 600)
             # 标签，连续变量转binary
-            labels_b = labels > 0.5
+            labels_b = labels > 0.78
             labels_b = labels_b.type(torch.int).data.cpu().numpy()
             labels_b = [i for i in labels_b]  # 一个元素是一个样本
 
