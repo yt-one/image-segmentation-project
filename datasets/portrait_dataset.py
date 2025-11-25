@@ -1,11 +1,10 @@
 import os
 
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, ConcatDataset
 from torch.utils.data import DataLoader
 import random
 import cv2
-
 
 class PortraitDataset2000(Dataset):
     """
@@ -59,19 +58,115 @@ class PortraitDataset2000(Dataset):
             raise Exception("\nroot_dir:{} is a empty dir! Please checkout your path to images!".format(self.root_dir))
         self.label_path_list = path_list
 
+class PortraitDataset34427(Dataset):
+    """
+    Deep Automatic Portrait Matting  34427，数据集读取
+    ├─clip_img
+    │  └─1803151818
+    │      └─clip_00000000
+    └─matting
+        └─1803151818
+            └─matting_00000000
+    """
+    cls_num = 2
+    names = ["bg", "portrait"]
+
+    def __init__(self, root_dir, transform=None, in_size=224, ext_num=None):
+        super(PortraitDataset34427, self).__init__()
+        self.root_dir = root_dir
+        self.transform = transform
+        self.img_info = []
+        self.in_size = in_size
+        self.ext_num = ext_num
+
+        # 获取mask的path
+        self._get_img_path()
+
+        # 截取部分数据
+        if self.ext_num:
+            self.img_info = self.img_info[:self.ext_num]
+
+    def __getitem__(self, index):
+
+        path_img, path_label = self.img_info[index]
+
+        img_bgr = cv2.imread(path_img)
+        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+        msk_bgra = cv2.imread(path_label, cv2.IMREAD_UNCHANGED)  # [0-255] 是matting 融合的图像，需要提取alpha
+        msk_gray = msk_bgra[:, :, 3]
+
+        if self.transform:
+            transformed = self.transform(image=img_rgb, mask=msk_gray)
+            img_rgb = transformed['image']
+            msk_gray = transformed['mask']
+
+        img_rgb = img_rgb.transpose((2, 0, 1))  # hwc --> chw
+        msk_gray = msk_gray/255.  # [0-1]连续变量
+
+        label_out = torch.tensor(msk_gray, dtype=torch.float)
+        img_chw_tensor = torch.from_numpy(img_rgb).float()
+
+        return img_chw_tensor, label_out
+
+    def __len__(self):
+        return len(self.img_info)
+
+    def _get_img_path(self):
+        img_dir = os.path.join(self.root_dir, "clip_img")
+        img_lst, msk_lst = [], []
+
+        for root, dirs, files in os.walk(img_dir):
+            for file in files:
+                if not file.endswith(".jpg"):
+                    continue
+                if file.startswith("._"):
+                    continue
+                path_img = os.path.join(root, file)
+                img_lst.append(path_img)
+
+        for path_img in img_lst:
+            path_msk = path_img.replace("clip_img", "matting"
+                                        ).replace("clip_0", "matting_0"
+                                                  ).replace(".jpg", ".png")
+            if os.path.exists(path_msk):
+                msk_lst.append(path_msk)
+            else:
+                print("path not found: {}\n path_img is: {}".format(path_msk, path_img))
+
+        if len(img_lst) != len(msk_lst):
+            raise Exception("\nimg info Error, img can't match with mask. got {} img, but got {} mask".format(
+                len(img_lst), len(msk_lst)))
+        if len(img_lst) == 0:
+            raise Exception("\nroot_dir:{} is a empty dir! Please checkout your path to images!".format(self.root_dir))
+
+        self.img_info = [(i, m) for i, m in zip(img_lst, msk_lst)]
+        random.shuffle(self.img_info)
 
 if __name__ == "__main__":
 
-    por_dir = r"D:\Learn\Datasets\Portrait-dataset-2000\dataset\testing"  # todo： 适配自己的路径
+    # por_dir = r"D:\Learn\Datasets\Portrait-dataset-2000\dataset\testing"  # todo： 适配自己的路径
+    #
+    # from config.portrait_config import cfg
+    # por_set = PortraitDataset2000(por_dir, transform=cfg.tf_train)
+    # train_loader = DataLoader(por_set, batch_size=1, shuffle=True, num_workers=0)
+    # print(len(train_loader))
+    # for i, sample in enumerate(train_loader):
+    #     img, label = sample
+    #     print(img.shape, label.shape)
+    #     print(img)
+    #     print(label)
 
-    from config.portrait_config import cfg
-    por_set = PortraitDataset2000(por_dir, transform=cfg.tf_train)
-    train_loader = DataLoader(por_set, batch_size=1, shuffle=True, num_workers=0)
-    print(len(train_loader))
+    mat_dir = r"..."
+    por_dir = r"..."
+
+    mat_set = PortraitDataset34427(mat_dir)
+    por_set = PortraitDataset2000(por_dir)
+    all_set = ConcatDataset([mat_set, por_set])  # 数据集拼接
+    train_loader = DataLoader(all_set, batch_size=1, shuffle=True, num_workers=0)
+    print(len(all_set))
     for i, sample in enumerate(train_loader):
+        # 载入数据
         img, label = sample
-        print(img.shape, label.shape)
-        print(img)
-        print(label)
+        print(i)
 
 
